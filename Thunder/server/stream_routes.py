@@ -101,20 +101,19 @@ def parse_range_header(range_header: str, file_size: int) -> tuple[int, int]:
             raise web.HTTPBadRequest(text=f"Invalid range header: {range_header}")
         suffix_len = int(end_str)
         if suffix_len <= 0:
-            raise web.HTTPRequestRangeNotSatisfiable(headers={"Content-Range": f"bytes */{file_size}"})
+            raise web.HTTPRequestRangeNotSatisfiable(
+                headers={"Content-Range": f"bytes */{file_size}"})
         start = max(file_size - suffix_len, 0)
         end = file_size - 1
 
     if start < 0 or end >= file_size or start > end:
         raise web.HTTPRequestRangeNotSatisfiable(
-            headers={"Content-Range": f"bytes */{file_size}"}
-        )
+            headers={"Content-Range": f"bytes */{file_size}"})
 
     return start, end
 
 
 @routes.get("/", allow_head=True)
-
 async def root_redirect(request):
     raise web.HTTPFound("https://github.com/fyaz05/FileToLink")
 
@@ -139,7 +138,6 @@ async def status_endpoint(request):
         "resources": {
             "total_workload": total_load,
             "workload_distribution": workload_distribution
-
         }
     })
 
@@ -160,7 +158,6 @@ async def media_preview(request: web.Request):
             exc_info=True)
         raise web.HTTPNotFound(text="Resource not found") from e
     except Exception as e:
-
         error_id = secrets.token_hex(6)
         logger.error(f"Preview error {error_id}: {e}", exc_info=True)
         raise web.HTTPInternalServerError(
@@ -182,15 +179,12 @@ async def media_delivery(request: web.Request):
             if not file_info.get('unique_id'):
                 raise FileNotFound("File unique ID not found in info.")
 
-            if (file_info['unique_id'][:SECURE_HASH_LENGTH] !=
-                    secure_hash):
-                raise InvalidHash(
-                    "Provided hash does not match file's unique ID.")
+            if (file_info['unique_id'][:SECURE_HASH_LENGTH] != secure_hash):
+                raise InvalidHash("Provided hash does not match file's unique ID.")
 
             file_size = file_info.get('file_size', 0)
             if file_size == 0:
-                raise FileNotFound(
-                    "File size is reported as zero or unavailable.")
+                raise FileNotFound("File size is reported as zero or unavailable.")
 
             range_header = request.headers.get("Range", "")
             start, end = parse_range_header(range_header, file_size)
@@ -199,16 +193,15 @@ async def media_delivery(request: web.Request):
             if start == 0 and end == file_size - 1:
                 range_header = ""
 
-            mime_type = (
-                file_info.get('mime_type') or 'application/octet-stream')
             filename = (
                 file_info.get('file_name') or f"file_{secrets.token_hex(4)}")
 
+            # AUTO DOWNLOAD HEADERS 🔥
             headers = {
-                "Content-Type": mime_type,
+                "Content-Type": "application/octet-stream",
                 "Content-Length": str(content_length),
-                "Content-Disposition": (
-                    f"inline; filename*=UTF-8''{quote(filename)}"),
+                "Content-Disposition":
+                    f"attachment; filename*=UTF-8''{quote(filename)}",
                 "Accept-Ranges": "bytes",
                 "Cache-Control": "public, max-age=31536000",
                 "Connection": "keep-alive"
@@ -250,6 +243,7 @@ async def media_delivery(request: web.Request):
                             break
                 finally:
                     work_loads[client_id] -= 1
+
             return web.Response(
                 status=206 if range_header else 200,
                 body=stream_generator(),
