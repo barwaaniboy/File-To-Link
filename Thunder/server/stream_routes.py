@@ -197,22 +197,24 @@ async def media_delivery(request: web.Request):
             filename = (
                 file_info.get('file_name') or f"file_{secrets.token_hex(4)}")
 
-            # --- MIME TYPE DETECTION ---
+            # --- MIME TYPE DETECTION (Waa la daayay si Player u garto) ---
             mime_type = file_info.get('mime_type')
             if not mime_type:
                 mime_type, _ = mimetypes.guess_type(filename)
             if not mime_type:
                 mime_type = "application/octet-stream"
 
-            # --- STREAMING & CORS HEADERS ---
+            # --- HEADERS (ISBEDEL: attachment + CORS) ---
             headers = {
                 "Content-Type": mime_type,
                 "Content-Length": str(content_length),
+                # Halkan waxaan ka dhigay 'attachment' si uu u soo dago markii la riixo
                 "Content-Disposition":
-                    f"inline; filename*=UTF-8''{quote(filename)}",
+                    f"attachment; filename*=UTF-8''{quote(filename)}",
                 "Accept-Ranges": "bytes",
                 "Cache-Control": "public, max-age=31536000",
                 "Connection": "keep-alive",
+                # CORS Headers (Kuwan ayaa Player-ka u ogolaanaya inuu shido)
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "Range",
                 "Access-Control-Expose-Headers": "Content-Length, Content-Range"
